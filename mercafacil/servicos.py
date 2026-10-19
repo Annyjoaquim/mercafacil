@@ -4,6 +4,7 @@ import hmac
 import os
 from datetime import datetime
 
+from .config import DESCONTO_MAXIMO, PERFIS_GERENCIA, TAXA_IVA
 from .db import Conexao
 from .pagamentos import criar_pagamento
 
@@ -140,10 +141,10 @@ class VendaServico:
         """itens = lista de (codigo_barras, quantidade). Devolve um resumo da venda."""
         if not itens:
             raise ErroNegocio("A venda precisa de pelo menos um produto.")
-        if desconto > 0 and perfil not in ("GERENTE", "ADMIN"):
+        if desconto > 0 and perfil not in PERFIS_GERENCIA:
             raise ErroNegocio("Só o gerente pode aplicar desconto.")
-        if desconto < 0 or desconto > 10:
-            raise ErroNegocio("O desconto máximo é de 10%.")
+        if desconto < 0 or desconto > DESCONTO_MAXIMO:
+            raise ErroNegocio(f"O desconto máximo é de {DESCONTO_MAXIMO}%.")
 
         # junta quantidades do mesmo produto (evita vender mais do que existe)
         quantidades = {}
@@ -162,7 +163,7 @@ class VendaServico:
             total_bruto += subtotal
 
         total = round(total_bruto * (1 - desconto / 100), 2)
-        iva = round(total * 16 / 116, 2)   # preços já incluem IVA de 16%
+        iva = round(total * TAXA_IVA / (100 + TAXA_IVA), 2)   # preços já incluem IVA
         troco = criar_pagamento(metodo).processar(total, valor_entregue)
 
         try:
@@ -197,7 +198,7 @@ class VendaServico:
         return {"id_venda": id_venda, "total": total, "iva": iva, "troco": troco}
 
     def anular_venda(self, id_venda, perfil):
-        if perfil not in ("GERENTE", "ADMIN"):
+        if perfil not in PERFIS_GERENCIA:
             raise ErroNegocio("Só o gerente pode anular vendas.")
         venda = self.bd.execute("SELECT * FROM venda WHERE id_venda=?", (id_venda,)).fetchone()
         if venda is None:
