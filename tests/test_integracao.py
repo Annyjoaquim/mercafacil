@@ -30,3 +30,14 @@ class TestesIntegracao(BaseTeste):
         self.vendas.registar_venda(self.id_caixa, [("7001001", 85)], "CARTAO")  # fica com 15 (< 20)
         self.assertEqual(len(alerta.mensagens), 1)
         self.assertIn("Arroz 1 kg", alerta.mensagens[0])
+
+    def test_TI05_venda_grava_iva_de_16_por_cento(self):
+        r = self.vendas.registar_venda(self.id_caixa, [("7001001", 2)], "MPESA")  # total 170,00
+        self.assertEqual(r["iva"], 23.45)  # 170 x 16 / 116
+
+    def test_TI06_nao_se_anula_a_mesma_venda_duas_vezes(self):
+        r = self.vendas.registar_venda(self.id_caixa, [("7001001", 10)], "EMOLA")
+        self.vendas.anular_venda(r["id_venda"], perfil="GERENTE")
+        with self.assertRaises(ErroNegocio):
+            self.vendas.anular_venda(r["id_venda"], perfil="GERENTE")
+        self.assertEqual(self.stock(self.arroz), 100)  # stock não foi reposto duas vezes

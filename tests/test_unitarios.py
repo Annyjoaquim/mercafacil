@@ -26,6 +26,14 @@ class TestesUnitarios(BaseTeste):
         with self.assertRaises(ErroNegocio):
             UtilizadorServico().autenticar("ana.caixa", "errada")
 
+    def test_TU06_senha_curta_e_rejeitada(self):
+        with self.assertRaises(ErroNegocio):
+            UtilizadorServico().criar("novo.user", "CAIXA", "123")
+
+    def test_TU07_codigo_de_barras_repetido_e_rejeitado(self):
+        with self.assertRaises(ErroNegocio):
+            self.produtos.adicionar("7001001", "Outro arroz", 90.00)
+
 
 if __name__ == "__main__":
     unittest.main()
